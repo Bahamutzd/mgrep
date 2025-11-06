@@ -51,8 +51,11 @@ async function uploadFile(
   store: string,
   filePath: string,
   fileName: string,
-): Promise<void> {
+): Promise<boolean> {
   const buffer = await fs.promises.readFile(filePath);
+  if (buffer.length === 0) {
+    return false;
+  }
   const hash = computeBufferHash(buffer);
   await client.stores.files.upload(
     store,
@@ -66,6 +69,7 @@ async function uploadFile(
       },
     },
   );
+  return true;
 }
 
 async function initialSync(
@@ -105,8 +109,15 @@ async function initialSync(
           const existingHash = storeHashes.get(filePath);
           processed += 1;
           if (!existingHash || existingHash !== hash) {
-            await uploadFile(client, store, filePath, path.basename(filePath));
-            uploaded += 1;
+            const didUpload = await uploadFile(
+              client,
+              store,
+              filePath,
+              path.basename(filePath),
+            );
+            if (didUpload) {
+              uploaded += 1;
+            }
           }
           onProgress?.({ processed, uploaded, total, filePath });
         } catch (err) {
