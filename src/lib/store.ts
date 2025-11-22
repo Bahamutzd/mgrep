@@ -292,20 +292,29 @@ export class TestStore implements Store {
   }
 
   private async readContent(file: File | ReadableStream): Promise<string> {
-    if ("text" in file && typeof (file as any).text === "function") {
+    if (
+      "text" in file &&
+      typeof (file as { text: unknown }).text === "function"
+    ) {
       return await (file as File).text();
     }
 
     const chunks: Buffer[] = [];
-    if (typeof (file as any)[Symbol.asyncIterator] === "function") {
-      for await (const chunk of file as any) {
+    if (
+      typeof (file as unknown as AsyncIterable<unknown>)[
+        Symbol.asyncIterator
+      ] === "function"
+    ) {
+      for await (const chunk of file as unknown as AsyncIterable<
+        Uint8Array | string
+      >) {
         chunks.push(Buffer.from(chunk));
       }
       return Buffer.concat(chunks).toString("utf-8");
     }
 
     if ("getReader" in file) {
-      const reader = (file as any).getReader();
+      const reader = (file as ReadableStream).getReader();
       const decoder = new TextDecoder();
       let res = "";
       while (true) {
@@ -371,7 +380,7 @@ export class TestStore implements Store {
               start_line: i,
               num_lines: 1,
             },
-          } as any);
+          } as unknown as ChunkType);
           if (results.length >= limit) break;
         }
       }

@@ -7,7 +7,7 @@ import {
   NodeFileSystem,
 } from "./file";
 import { type Git, NodeGit } from "./git";
-import { MixedbreadStore, TestStore, type Store } from "./store";
+import { MixedbreadStore, type Store, TestStore } from "./store";
 
 const BASE_URL = isDevelopment()
   ? "http://localhost:8000"
