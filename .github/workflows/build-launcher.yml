@@ -28,7 +28,7 @@ jobs:
 
       - name: Rename output to mgrep.exe
         run: |
-          Rename-Item -Path out\launcher.exe -NewName mgrep.exe
+          Rename-Item -Path out\MgrepLauncher.exe -NewName mgrep.exe
         shell: pwsh
 
       - name: Upload artifact
