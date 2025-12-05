@@ -1,11 +1,11 @@
 name: Build mgrep Windows exe
 
 on:
-  # 打 tag 的时候自动构建一个 exe
+  # 打 tag 的时候自动构建 exe（比如 v0.1.0）
   push:
     tags:
       - "v*"
-  # 也可以手动在 Actions 里点运行
+  # 也支持在 Actions 页面手动点“Run workflow”
   workflow_dispatch:
 
 jobs:
@@ -13,28 +13,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. 拉代码
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "pnpm"
-
-      - name: Setup pnpm
+      # 2. 安装 pnpm（这一步一定要有！）
+      - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10
           run_install: false
 
+      # 3. 安装 Node.js，并开启 pnpm 缓存
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      # 4. 安装依赖
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build TypeScript (gets you dist/index.js)
+      # 5. 官方脚本：把 TS 编译成 dist/index.js
+      - name: Build TypeScript (dist/index.js)
         run: pnpm build
 
-      # 用 esbuild 把 ESM 的 dist/index.js 打包成单文件 CJS：dist/mgrep.cjs
+      # 6. 用 esbuild 把 ESM 的 dist/index.js 打包成单文件 CJS：dist/mgrep.cjs
       - name: Bundle to single CJS file with esbuild
         run: |
           pnpm dlx esbuild dist/index.js \
@@ -45,14 +50,14 @@ jobs:
             --outfile=dist/mgrep.cjs \
             --banner:js="#!/usr/bin/env node"
 
-      # 用 pkg 把 CJS 打成 Windows 的 exe
+      # 7. 用 pkg 把 CJS 打成 Windows exe
       - name: Build Windows exe with pkg
         run: |
           pnpm dlx pkg dist/mgrep.cjs \
             --targets node18-win-x64 \
             --output mgrep-win-x64.exe
 
-      # 作为 artifact 上传，方便在 Actions 页面下载
+      # 8. 上传 exe 方便你在 Actions 页面下载
       - name: Upload mgrep.exe artifact
         uses: actions/upload-artifact@v4
         with:
