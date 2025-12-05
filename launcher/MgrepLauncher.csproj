@@ -6,11 +6,12 @@
 
     <!-- 目标框架，建议用 .NET 8（GitHub Actions 上也很方便） -->
     <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>mgrep</AssemblyName>
 
     <!-- 可选：打开隐式 using 和可空引用类型 -->
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>mgrep</AssemblyName>
   </PropertyGroup>
 
 </Project>
+
