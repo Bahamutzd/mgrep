@@ -1,0 +1,38 @@
+name: Build mgrep launcher (C#)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        working-directory: launcher
+        run: dotnet restore
+
+      - name: Publish single-file exe
+        working-directory: launcher
+        run: dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true -p:SelfContained=false -o ../out
+
+      - name: Rename output to mgrep.exe
+        run: |
+          Rename-Item -Path out\launcher.exe -NewName mgrep.exe
+        shell: pwsh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgrep-launcher-win-x64
+          path: out\mgrep.exe
