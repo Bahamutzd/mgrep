@@ -1,6 +1,11 @@
-name: Build Windows EXE
+name: Build mgrep Windows exe
 
 on:
+  # 打 tag 的时候自动构建一个 exe
+  push:
+    tags:
+      - "v*"
+  # 也可以手动在 Actions 里点运行
   workflow_dispatch:
 
 jobs:
@@ -8,8 +13,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -17,28 +28,32 @@ jobs:
           version: 10
           run_install: false
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "pnpm"
-          cache-dependency-path: "pnpm-lock.yaml"
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build bundled CJS entry (esbuild)
+      - name: Build TypeScript (gets you dist/index.js)
+        run: pnpm build
+
+      # 用 esbuild 把 ESM 的 dist/index.js 打包成单文件 CJS：dist/mgrep.cjs
+      - name: Bundle to single CJS file with esbuild
         run: |
-          pnpm add -D esbuild
-          node scripts/build-cjs.mjs
+          pnpm dlx esbuild dist/index.js \
+            --bundle \
+            --platform=node \
+            --target=node18 \
+            --format=cjs \
+            --outfile=dist/mgrep.cjs \
+            --banner:js="#!/usr/bin/env node"
 
-      - name: Install pkg
-        run: pnpm add -D pkg
+      # 用 pkg 把 CJS 打成 Windows 的 exe
+      - name: Build Windows exe with pkg
+        run: |
+          pnpm dlx pkg dist/mgrep.cjs \
+            --targets node18-win-x64 \
+            --output mgrep-win-x64.exe
 
-      - name: Build mgrep.exe (node18-win-x64)
-        run: npx pkg dist/mgrep.cjs --target node18-win-x64 --output mgrep-win-x64.exe
-
-      - name: Upload artifact
+      # 作为 artifact 上传，方便在 Actions 页面下载
+      - name: Upload mgrep.exe artifact
         uses: actions/upload-artifact@v4
         with:
           name: mgrep-win-x64
